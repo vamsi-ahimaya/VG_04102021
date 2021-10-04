@@ -1,0 +1,251 @@
+<html>
+ <head>
+  <title>Java Technical Test</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular.js"></script>
+  
+  <!-- 
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.11.0/css/jquery.dataTables.min.css">
+   -->
+ 
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>  
+  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.0/js/jquery.dataTables.js"></script>
+
+    
+  <script type="text/javascript">
+	var app = angular.module("CardManagement", []);
+
+	//Controller Part
+	app.controller("CardController", function($scope, $http) {
+
+		$scope.cardList = [];
+		$scope.cardForm = {
+			id : -1,
+			bank : "",
+			cardNumber : "",
+			expiryDate : "",
+			createdDate : new Date(),
+			updatedDate: new Date()		
+		};
+
+		//Now load the data from server
+		_refreshCardData();
+
+		//HTTP POST/PUT methods for add/edit card with the help of id, we are going to find out whether it is put or post operation
+		$scope.submitCard = function() {
+
+			var url = "";
+			var method = "";
+			
+			if ($scope.cardForm.id == -1) {
+				//Id is absent in form data, it is create new card
+				method = "POST";
+				url = '/addCard';
+			} else {
+				//Id is present in form data, it is edit or update card
+				method = "PUT";
+				url = '/updateCard';
+			}
+
+			$http({
+				method : method,
+				url : url,
+				data : angular.toJson($scope.cardForm),
+				headers : { 'Content-Type' : 'application/json'}
+			}).then(_success, _error);
+		};
+
+		//HTTP DELETE- delete card by Id
+		$scope.deleteCard = function(card) {
+			$http({
+				method : 'DELETE',
+				url : '/deleteCard/' + card.id
+			}).then(_success, _error);
+		};
+
+		// In case of edit, populate form fields and assign form.id with card id
+		$scope.updateCard = function(card) {
+			$scope.cardForm.id = card.id;
+			$scope.cardForm.bank = card.bank;
+			$scope.cardForm.cardNumber = card.cardNumber;
+			$scope.cardForm.expiryDate = new Date(card.expiryDate);
+			$scope.cardForm.createdDate = card.createdDate;
+			$scope.cardForm.updatedDate = card.updatedDate;
+		};
+
+		/* Private Methods */
+		//HTTP GET- get all cards from the backend
+		function _refreshCardData() {
+			$http({
+				method : 'GET',
+				url : 'http://localhost:8080/getCardList'
+			}).then(function successCallback(response) {
+				$scope.cardList = response.data;
+			}, function errorCallback(response) {
+				console.log(response.statusText);
+			});
+		}
+
+		function _success(response) {
+			_refreshCardData();
+			_clearCardFormData();
+		}
+
+		function _error(response) {
+			console.log(response.statusText);
+		}
+
+		//Clear the Card form
+		function _clearCardFormData() {
+			$scope.cardForm.id = -1;
+			$scope.cardForm.bank = "";
+			$scope.cardForm.cardNumber = "";
+			$scope.cardForm.expiryDate = "";
+			$scope.cardForm.createdDate = "";
+			$scope.cardForm.updatedDate = "";
+		}
+	});
+	
+	function formats(ele,e){
+		if(ele.value.length<19){
+	    	ele.value= ele.value.replace(/\W/gi, '').replace(/(.{4})/g, '$1 ');
+	        return true;
+	    }else{
+	         return false;
+	    }
+	}
+	      
+	function numberValidation(e){
+		e.target.value = e.target.value.replace(/[^\d ]/g,'');
+	    return false;
+	}
+	
+	/*
+	$(document).ready(function() {
+	    $('#cardTable').DataTable();
+	});*/
+</script>
+
+<style>
+.blue-button {
+	background: #25A6E1;
+	filter: progid: DXImageTransform.Microsoft.gradient( startColorstr='#25A6E1',endColorstr='#188BC0', GradientType=0);
+	padding: 3px 5px;
+	color: #fff;
+	font-family: 'Helvetica Neue', sans-serif;
+	font-size: 12px;
+	border-radius: 2px;
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 4px;
+	border: 1px solid #1A87B9
+}
+
+.red-button {
+	background: #CD5C5C;
+	padding: 3px 5px;
+	color: #fff;
+	font-family: 'Helvetica Neue', sans-serif;
+	font-size: 12px;
+	border-radius: 2px;
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 4px;
+	border: 1px solid #CD5C5C
+}
+
+table {
+	font-family: "Helvetica Neue", Helvetica, sans-serif;
+	width: 50%;
+}
+
+caption {
+	text-align: left;
+	color: silver;
+	font-weight: bold;
+	text-transform: uppercase;
+	padding: 5px;
+}
+
+th {
+	background: SteelBlue;
+	color: white;
+}
+
+tbody tr:nth-child(even) {
+	background: WhiteSmoke;
+}
+
+tbody tr td:nth-child(2) {
+	text-align: center;
+}
+
+tbody tr td:nth-child(3), tbody tr td:nth-child(4) {
+	text-align: center;
+	font-family: monospace;
+}
+
+tfoot {
+	background: SeaGreen;
+	color: white;
+	text-align: right;
+}
+
+tfoot tr th:last-child {
+	font-family: monospace;
+}
+
+td, th {
+	border: 1px solid gray;
+	width: 25%;
+	text-align: left;
+	padding: 5px 10px;
+}
+</style>
+<head>
+
+ <body ng-app="CardManagement" ng-controller="CardController">
+  <h1>Card Details</h1>
+  <form ng-submit="submitCard()">
+   <table>
+    <tr>
+     <th colspan="2">Add/Update Card</th>
+    </tr>
+    <tr>
+     <td>Bank</td>
+     <td><input type="text" ng-model="cardForm.bank" /></td>
+    </tr>
+    <tr>
+     <td>Card</td>
+     <td><input type="text" ng-model="cardForm.cardNumber" onkeypress='return formats(this,event)' onkeyup="return numberValidation(event)"/></td>
+    </tr>
+    <tr>
+     <td>Expiry Date</td>
+     <td><input type="date" ng-model="cardForm.expiryDate" /></td>
+    </tr>
+    <tr>
+     <td colspan="2"><input type="submit" value="Submit" class="blue-button" /></td>
+    </tr>
+   </table>
+  </form>
+ 
+  <table id="cardTable">
+   <thead>
+    <tr>
+     <th>Bank</th>
+     <th>Card Number</th>
+     <th>Expiry Date</th>
+     <th>Operations</th>
+    </tr>
+   </thead>
+   <tbody>
+    <tr ng-repeat="card in cardList">
+     <td>{{ card.bank }}</td>
+     <td>{{ card.strCardNumber }}</td>
+     <td>{{ card.expiryDate | date:'MM/dd/yyyy'}}</td>
+     <td>
+      <a ng-click="updateCard(card)" class="blue-button">Edit</a> | 
+      <a ng-click="deleteCard(card)" class="red-button">Delete</a>
+     </td>
+    </tr>
+   </tbody>
+  </table>
+ </body>
+</html>
